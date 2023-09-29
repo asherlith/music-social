@@ -1,0 +1,4 @@
+.idea
+venv
+*/celerybeat-schedule
+__pycache__/

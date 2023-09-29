@@ -1,0 +1,76 @@
+version: '3'
+
+services:
+    music_db:
+      image: postgres
+      container_name: music_db
+      ports:
+        - 5432:5432
+      environment:
+        DB_NAME: 'postgres'
+        POSTGRES_PASSWORD: 'postgres'
+        DB_USER: 'postgres'
+      volumes:
+        - music_db:/var/lib/postgresql/data/
+
+    music_redis:
+      image: redis
+      container_name: music_redis
+
+    music_django:
+      container_name: music_api
+      build:
+        dockerfile: 'docker/Dockerfile'
+      environment:
+        DB_NAME: 'postgres'
+        DB_USER: 'postgres'
+        DB_PASSWORD: 'postgres'
+
+      depends_on:
+        - music_db
+      volumes:
+        - .:/app
+      ports:
+        - 9000:80
+      command: [ "python", "manage.py", "runserver" ]
+
+    music_celery:
+      container_name: music_celery
+      build:
+        context: .
+        dockerfile: "docker/Dockerfile"
+      command: /app/docker/celery.sh
+      restart: unless-stopped
+      environment:
+        DB_NAME: 'postgres'
+        DB_USER: 'postgres'
+        DB_PASSWORD: 'postgres'
+        DEBUG: 'True'
+      depends_on:
+        - music_db
+        - music_redis
+      volumes:
+        - .:/app
+
+    music_beat:
+      container_name: music_beat
+      build:
+        context: .
+        dockerfile: "docker/Dockerfile"
+      command: /app/docker/celery_beat.sh
+      restart: unless-stopped
+      environment:
+        DB_NAME: 'postgres'
+        DB_USER: 'postgres'
+        DB_PASSWORD: 'postgres'
+        DEBUG: 'True'
+
+      depends_on:
+        - music_db
+        - music_redis
+      volumes:
+        - .:/app
+
+
+volumes:
+  music_db:
