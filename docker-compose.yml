@@ -32,7 +32,7 @@ services:
         - .:/app
       ports:
         - 9000:80
-      command: [ "python", "manage.py", "runserver" ]
+      command: [ "python", "/app/music_social/manage.py", "runserver" ]
 
     music_celery:
       container_name: music_celery
