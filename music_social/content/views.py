@@ -1,3 +1,9 @@
-from django.shortcuts import render
+from rest_framework.generics import ListAPIView
 
-# Create your views here.
+from content.models import Song
+from content.serializers import SongSerializer
+
+
+class SongsView(ListAPIView):
+    serializer_class = SongSerializer
+    queryset = Song.objects.filter(enable=True).exclude(audio="")

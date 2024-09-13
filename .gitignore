@@ -2,3 +2,5 @@
 venv
 */celerybeat-schedule
 __pycache__/
+static
+files
