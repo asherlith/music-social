@@ -1,8 +1,10 @@
 import random
 import string
+from telnetlib import STATUS
 
 from django.contrib.auth.hashers import check_password
 from django.core.cache import cache
+from django.db.models import Q
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
@@ -40,11 +42,12 @@ def send_email(email, otp):
 
 
 class LoginView(APIView):
-    def get(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         data = request.data
         username = data.get('username')
         password = data.get('password')
-        user = User.objects.filter(username=username).first()
+        user = User.objects.filter(Q(username=username)|Q(email=username)).first()
+        print(user)
         token = Token.objects.filter(user=user).first()
         if not user:
             return Response(status=status.HTTP_404_NOT_FOUND)
@@ -103,27 +106,26 @@ class RegisterView(APIView):
 class RegisterVerifyView(APIView):
     def post(self, request, *args, **kwargs):
         data = request.data
-        user = request.user
         entered_otp = data.get('entered_otp')
+        email = data.get('email')
+        user = User.objects.filter(email=email).last()
 
-        if user.is_authenticated:
-            if not cache.get(f'{user.username}'):
-                return Response('OTP expired/User doesnt exist', status=status.HTTP_400_BAD_REQUEST)
 
-            elif cache.get(f'{user.username}') != entered_otp:
-                return Response({'error': 'OTP did not match'}, status=status.HTTP_400_BAD_REQUEST)
+        if not cache.get(f'{user.username}'):
+            return Response('OTP expired/User doesnt exist', status=status.HTTP_400_BAD_REQUEST)
 
-            else:
-                user.verified = True
-                user.save()
-                return Response('OTP verified', status=status.HTTP_200_OK)
+        elif cache.get(f'{user.username}') != entered_otp:
+            return Response({'error': 'OTP did not match'}, status=status.HTTP_400_BAD_REQUEST)
 
         else:
-            return Response({'error': 'User doesnt exist'}, status=status.HTTP_400_BAD_REQUEST)
+            user.verified = True
+            user.save()
+            return Response('OTP verified', status=status.HTTP_200_OK)
+
 
 
 class ResetPasswordView(APIView):
-    def get(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         data = request.data
 
         if not request.GET.get('second'):
@@ -136,9 +138,9 @@ class ResetPasswordView(APIView):
                     user_otp = cache.get(f'reset-{email}')
 
                 send_email(email, user_otp)
-                return Response(status=status.HTTP_200_OK)
+                return Response({}, status=status.HTTP_200_OK)
 
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
+            return Response({}, status=status.HTTP_401_UNAUTHORIZED)
 
         else:
             otp = data.get('otp')
@@ -154,31 +156,49 @@ class ResetPasswordView(APIView):
                 if otp == cache.get(f'reset-{email}'):
                     user.set_password(password)
                     user.save()
-                    return Response(status=status.HTTP_200_OK)
+                    return Response({}, status=status.HTTP_200_OK)
 
                 return Response({'error': 'OTP did not match'}, status=status.HTTP_400_BAD_REQUEST)
 
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response({}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ProfileView(APIView):
     def patch(self, request, *args, **kwargs):
         data = request.data
+        request.data.profile_picture = request.FILES.get('profile_picture')
+        ser = ProfileInputSerializer(data=data)
+        if ser.is_valid():
+            data = ser.validated_data
 
-        if ProfileInputSerializer(**data).is_valid():
-            data = ProfileInputSerializer(**data).data
+            if data.get('first_name'):
+                request.user.first_name = data.pop('first_name')
+
+
+            if data.get('last_name'):
+                request.user.last_name = data.pop('last_name')
+
+            if data.get('username'):
+                request.user.username = data.pop('username')
+            request.user.save()
+
             if "biography_song" in data.keys():
                 ProfileSong.objects.create(
                     profile=request.user.profile,
-                    song=data.get('song'),
-                    biography_song_start_second=data.get('biography_song_start_second'),
-                    biography_song_end_second=data.get('biography_song_end_second')
+                    song_id=data.pop('biography_song'),
+                    biography_song_start_second=data.pop('biography_song_start_second'),
+                    biography_song_end_second=data.pop('biography_song_end_second')
 
                 )
             Profile.objects.update(**data)
+            request.user.profile.profile_picture = request.FILES.get('profile_picture')
+            request.user.profile.save()
+            return Response({}, status=status.HTTP_200_OK)
+
+        return Response({'error':'invalid data'}, status=status.HTTP_400_BAD_REQUEST)
 
     def get(self, request, *args, **kwargs):
-        return Response(ProfileSerializer(request.user.profile).data, status=status.HTTP_200_OK)
+        return Response(ProfileSerializer(request.user.profile, context={'request':request}).data, status=status.HTTP_200_OK)
 
 
 

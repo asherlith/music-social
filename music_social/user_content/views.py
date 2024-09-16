@@ -25,3 +25,29 @@ class UploadContentView(APIView):
             return Response({'error': 'invalid data'}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({'error': 'log in'}, status=status.HTTP_400_BAD_REQUEST)
+
+class GetContentView(APIView):
+    def get(self, request, *args, **kwargs):
+        is_main = request.GET.get('is_main') == 'true'
+        is_archive = request.GET.get('is_archive') == 'true'
+        is_daily = request.GET.get('is_daily') == 'true'
+        user = request.user
+
+        if not user.is_anonymous:
+            posts = ProfilePost.objects.filter(profile=user.profile)
+
+            if is_main:
+                posts = posts.filter(is_main=True)
+            if is_archive:
+                posts = posts.filter(is_archive=True)
+            if is_daily:
+                posts = posts.filter(is_daily=True)
+
+            return Response(
+                ProfilePostSerializer(
+                    posts,
+                    many=True,
+                    context={'request': request}
+                ).data,
+                status=status.HTTP_200_OK
+            )

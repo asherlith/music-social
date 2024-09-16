@@ -28,9 +28,7 @@ SECRET_KEY = 'django-insecure-v4i=-kzjd(9g(1#2u3*&b6-g)3o9ov&qhyb#j7!i@lxs377-wq
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-    'api.hokm.baazigooshi.com',
+    '*'
 ]
 
 
@@ -53,10 +51,11 @@ INSTALLED_APPS = [
     'user_content'
 
 ]
-
+CORS_ALLOW_ALL_ORIGINS = True
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
