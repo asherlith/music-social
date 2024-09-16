@@ -4,7 +4,7 @@ from telnetlib import STATUS
 
 from django.contrib.auth.hashers import check_password
 from django.core.cache import cache
-from django.db.models import Q
+from django.db.models import Q, Prefetch
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
@@ -202,4 +202,20 @@ class ProfileView(APIView):
 
 
 
+class ProfileSearchView(APIView):
+    def get(self, request, *args, **kwargs):
+        users=User.objects.filter(username__icontains=request.GET.get('username')).values_list('id', flat=True)
+        profiles = Profile.objects.filter(user__in=users)
+        return Response(ProfileSerializer(profiles, many=True, context={'request':request}).data, status=status.HTTP_200_OK)
+
+
+
+class ProfileUsernameView(APIView):
+    def get(self, request, *args, **kwargs):
+        username = kwargs.get('username')
+        user_ = User.objects.filter(username=username).first()
+        if user_:
+            return Response(ProfileSerializer(user_.profile).data, status=200)
+        else:
+            return Response({}, status=400)
 

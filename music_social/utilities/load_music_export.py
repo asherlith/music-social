@@ -3,6 +3,7 @@ import sys
 import eyed3
 from os import listdir, environ, getcwd
 import django
+import librosa
 from django.core.files import File
 
 
@@ -15,6 +16,15 @@ def initial():
 initial()
 
 from content.models import Artist, Album, Song
+
+import librosa
+
+def extract_features(y, sr, frame_length=2048, hop_length=512):
+    energy = librosa.feature.rms(y=y, frame_length=frame_length, hop_length=hop_length)
+    times = librosa.times_like(energy, sr=sr, hop_length=hop_length)
+    return times, energy.flatten()
+
+
 
 for file in listdir('../files'):
     print(f"INSERTING FILE {file}")
@@ -55,6 +65,13 @@ for file in listdir('../files'):
           if song.duration==0:
               song.duration = audio.info.time_secs
               song.save()
+
+          y, sr = librosa.load(path)
+
+          times, energy = extract_features(y, sr)
+          song.times = times.tolist()
+          song.energy = energy.tolist()
+          song.save()
 
     except Exception as e:
         print(e)

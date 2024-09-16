@@ -1,3 +1,4 @@
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
 from content.models import Song
@@ -26,3 +27,4 @@ class ProfilePost(BaseModel):
     is_daily = models.BooleanField(default=False)
     is_main = models.BooleanField(default=False)
     is_color = models.BooleanField(default=False)
+    palette = models.CharField(null=True, blank=True)

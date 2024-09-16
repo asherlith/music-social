@@ -1,3 +1,5 @@
+from sys import base_prefix
+
 from django.db import models
 
 from reusable.models import BaseModel
@@ -33,5 +35,7 @@ class Song(BaseModel):
     )
     enable = models.BooleanField(default=True)
     duration = models.FloatField(default=0)
+    times = models.CharField(blank=True, null=True)
+    energy = models.CharField(blank=True, null=True)
     def __str__(self):
         return self.name

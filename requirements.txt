@@ -16,3 +16,8 @@ pre-commit~=3.4.0
 Pillow==10.0.0
 isort ~= 5.1.0
 eyed3 == 0.9.7
+colorthief
+librosa
+numpy
+scikit-learn
+matplotlib
