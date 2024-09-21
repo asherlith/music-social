@@ -27,3 +27,10 @@ def profile_avatar_path(instance, filename):
     return os.path.join(
         ".", "avatars", p_id, "{}.{}".format(int(timezone.now().timestamp()), ext)
     )
+
+def profile_colors_path(instance, filename):
+    ext = filename.split(".")[-1].lower()
+    p_id = f"{instance.id}"
+    return os.path.join(
+        ".", "colors", p_id, "{}.{}".format(int(timezone.now().timestamp()), ext)
+    )

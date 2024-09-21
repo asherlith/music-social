@@ -15,7 +15,7 @@ from colorthief import ColorThief
 
 from PIL import Image
 
-from utilities.audio_interpreter import handle_graph
+from utilities.audio_interpreter import get_user_color_stats, generate_statistics, plot_color_distribution
 
 
 def normalize_color(color):
@@ -59,10 +59,15 @@ class GetContentView(APIView):
         is_main = request.GET.get('is_main') == 'true'
         is_archive = request.GET.get('is_archive') == 'true'
         is_daily = request.GET.get('is_daily') == 'true'
+        username = request.GET.get('username')
         user = request.user
 
         if not user.is_anonymous:
-            posts = ProfilePost.objects.filter(profile=user.profile)
+
+            if username:
+                posts = ProfilePost.objects.filter(profile__user__username=username)
+            else:
+                posts = ProfilePost.objects.filter(profile=user.profile)
 
             if is_main:
                 posts = posts.filter(is_main=True)
@@ -70,12 +75,6 @@ class GetContentView(APIView):
                 posts = posts.filter(is_archive=True)
             if is_daily:
                 posts = posts.filter(is_daily=True)
-            # post = posts.first()
-            #
-            # y, sr = librosa.load(post.audio.audio.path)
-            # energy = json.loads(post.audio.energy)
-            # rms_energy = np.array(energy)
-            # handle_graph(rms_energy, [normalize_color(c) for c in ast.literal_eval(post.palette)], y, sr)
             return Response(
                 ProfilePostSerializer(
                     posts,

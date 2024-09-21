@@ -1,3 +1,4 @@
+from filetype import is_archive
 from rest_framework import serializers
 
 from user.models import Profile, User
@@ -39,13 +40,24 @@ class ProfileSerializer(serializers.ModelSerializer):
     post_count = serializers.SerializerMethodField()
     following = serializers.SerializerMethodField()
     follower = serializers.SerializerMethodField()
+    is_followed = serializers.SerializerMethodField()
 
     user = UserSerializer()
 
     class Meta:
         model = Profile
 
-        fields = ['biography', 'profile_picture', 'biography_song', 'nickname', 'user', 'follower', 'following', 'post_count']
+        fields = [
+            'biography',
+            'profile_picture',
+            'biography_song',
+            'nickname',
+            'user',
+            'follower',
+            'following',
+            'post_count',
+            'is_followed'
+        ]
 
     def get_biography_song(self, instance):
         return BiographySongSerializer(instance.profile_song.last()).data
@@ -58,4 +70,11 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     def get_follower(self, instance):
         return instance.follower.all().count() if instance.follower else 0
+
+    def get_is_followed(self, instance):
+        if self.context.get('username') and self.context.get('username').username !=self.context.get('request').user.username:
+            if self.context.get('username').profile.id in list(self.context.get('request').user.profile.following.all().values_list('id', flat=True)):
+                return True
+            return False
+        return None
 
